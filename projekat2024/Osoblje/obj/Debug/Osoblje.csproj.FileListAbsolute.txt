@@ -1,0 +1,7 @@
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Osoblje\bin\Debug\Osoblje.exe.config
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Osoblje\bin\Debug\Osoblje.exe
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Osoblje\bin\Debug\Osoblje.pdb
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Osoblje\obj\Debug\Osoblje.csproj.AssemblyReference.cache
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Osoblje\obj\Debug\Osoblje.csproj.CoreCompileInputs.cache
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Osoblje\obj\Debug\Osoblje.exe
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Osoblje\obj\Debug\Osoblje.pdb

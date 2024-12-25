@@ -1,0 +1,7 @@
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\HotelskiSistem\obj\Debug\HotelskiSistem.csproj.AssemblyReference.cache
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\HotelskiSistem\obj\Debug\HotelskiSistem.csproj.CoreCompileInputs.cache
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\HotelskiSistem\bin\Debug\HotelskiSistem.exe.config
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\HotelskiSistem\bin\Debug\HotelskiSistem.exe
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\HotelskiSistem\bin\Debug\HotelskiSistem.pdb
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\HotelskiSistem\obj\Debug\HotelskiSistem.exe
+D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\HotelskiSistem\obj\Debug\HotelskiSistem.pdb
