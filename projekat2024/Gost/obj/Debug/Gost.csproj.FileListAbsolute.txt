@@ -1,7 +1,0 @@
-D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Gost\obj\Debug\Gost.csproj.AssemblyReference.cache
-D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Gost\obj\Debug\Gost.csproj.CoreCompileInputs.cache
-D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Gost\bin\Debug\Gost.exe.config
-D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Gost\bin\Debug\Gost.exe
-D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Gost\bin\Debug\Gost.pdb
-D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Gost\obj\Debug\Gost.exe
-D:\milica\PSI\5.SEMESTAR\Mreze\projekat2024\Gost\obj\Debug\Gost.pdb
