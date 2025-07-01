@@ -60,8 +60,21 @@ void Server::pokreniUDPServer() {
     if (bytesReceived > 0) {
         buffer[bytesReceived] = '\0'; // dodaj null terminator
         cout << "Primljena UDP poruka: " << buffer << endl;
-    }
 
+
+        //za vracanje potvrde
+        const char* odgovor = "POTVRDA=OK";
+
+        int sendResult = sendto(udpSocket, odgovor, (int)strlen(odgovor), 0,
+            (SOCKADDR*)&clientAddr, clientAddrSize);
+
+        if (sendResult == SOCKET_ERROR) {
+            std::cout << "Slanje potvrde nije uspelo.\n";
+        }
+        else {
+            std::cout << "Potvrda poslata gostu.\n";
+        }
+    }
 
     // Čišćenje
     closesocket(udpSocket);
@@ -132,18 +145,20 @@ void Server::pokreniTCPServer() {
     }
     else {
         cout << "Poruka poslata ka osoblju.\n";
+
+
+        //potvrda od osoblja
+        char buffer[512];
+        int primljeno = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+
+        if (primljeno > 0) {
+            buffer[primljeno] = '\0';
+            std::cout << "Potvrda od osoblja: " << buffer << "\n";
+        }
+        else {
+            std::cout << "Nije primljena potvrda od osoblja.\n";
+        }
     }
-
-    //
-    // Prijem jedne poruke od klijenta (osoblja)
-    char buffer[512];
-    int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-
-    if (bytesReceived > 0) {
-        buffer[bytesReceived] = '\0';
-        cout << "Primljena TCP poruka: " << buffer << endl;
-    }
-
 
     closesocket(clientSocket);
     closesocket(listenSocket);

@@ -1,9 +1,11 @@
-#include "Gost.h"
+﻿#include "Gost.h"
 #pragma comment(lib, "ws2_32.lib")
 #include <iostream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <string>
+#include <fstream>
+
 
 Gost::Gost(string ime, int apartman, int gosti, int noci, sockaddr_in adr)
     : ime(ime), brojApartmana(apartman), brojGostiju(gosti), brojNoci(noci),
@@ -40,12 +42,61 @@ void Gost::posaljiRezervaciju(string serverIp, int serverPort) {
     }
     else {
         cout << "Rezervacija poslata: " << poruka << "\n";
+
+
+        //primanje poruke od servera
+        char recvBuffer[512];
+        sockaddr_in fromAddr;
+        int fromLen = sizeof(fromAddr);
+
+        int recvResult = recvfrom(udpSocket, recvBuffer, sizeof(recvBuffer) - 1, 0,
+            (sockaddr*)&fromAddr, &fromLen);
+
+        if (recvResult == SOCKET_ERROR) {
+            std::cout << "Primanje potvrde nije uspelo: " << WSAGetLastError() << "\n";
+        }
+        else {
+            recvBuffer[recvResult] = '\0'; // Null-terminiraj string
+            std::cout << "Potvrda od servera: " << recvBuffer << "\n";
+        }
     }
 
     closesocket(udpSocket);
     WSACleanup();
 }
+/*
+void Gost::serijalizuj(std::ofstream& out) const {
+    // Serijalizuj niz podataka o gostu u binarni fajl
+    int imeLen = (int)ime.size();
+    out.write((char*)&imeLen, sizeof(imeLen));
+    out.write(ime.c_str(), imeLen);
 
+    out.write((char*)&brojApartmana, sizeof(brojApartmana));
+    out.write((char*)&brojGostiju, sizeof(brojGostiju));
+    out.write((char*)&brojNoci, sizeof(brojNoci));
+
+
+}
+
+void Gost::deserijalizuj(std::ifstream& in) {
+    // Očitaj podatke iz binarnog fajla u polja klase
+
+    int imeLen = 0;
+    in.read((char*)&imeLen, sizeof(imeLen));
+
+    char* buffer = new char[imeLen + 1];
+    in.read(buffer, imeLen);
+    buffer[imeLen] = '\0';
+
+    ime = std::string(buffer);
+    delete[] buffer;
+
+    in.read((char*)&brojApartmana, sizeof(brojApartmana));
+    in.read((char*)&brojGostiju, sizeof(brojGostiju));
+    in.read((char*)&brojNoci, sizeof(brojNoci));
+
+}
+*/
 /*
 int Gost::izracunajRacun() {
     int cenaPoNoci = 3000;

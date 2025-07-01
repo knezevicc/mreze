@@ -4,7 +4,6 @@
 #include <ws2tcpip.h>
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-
 //proba
 
 Osoblje::Osoblje(string ime, int id) : ime(ime), id(id) {}
@@ -47,10 +46,20 @@ void Osoblje::primiZadatke() {
 
     while (true) {
         bytesReceived = recv(sock, buffer, sizeof(buffer) - 1, 0);
-        if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
-            cout << "Konekcija prekinuta ili greška u prijemu.\n";
+        if (bytesReceived == SOCKET_ERROR) {
+            int err = WSAGetLastError();
+            if (err == WSAETIMEDOUT) {
+                std::cout << "Timeout na prijem, cekam dalje zadatke...\n";
+                continue;  // nastavi cekanje na zadatke
+            }
+            std::cout << "Greška u prijemu: " << err << "\n";
             break;
         }
+        else if (bytesReceived == 0) {
+            std::cout << "Server je zatvorio konekciju.\n";
+            break;
+        }
+        
         buffer[bytesReceived] = '\0';
         cout << "Primljen zadatak: " << buffer << endl;
         
