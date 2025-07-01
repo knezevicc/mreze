@@ -4,6 +4,9 @@
 #include <ws2tcpip.h>
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
+
+//proba
+
 Osoblje::Osoblje(string ime, int id) : ime(ime), id(id) {}
 
 void Osoblje::poveziSeSaServerom(const char* ip, int port) {
