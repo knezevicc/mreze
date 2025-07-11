@@ -9,23 +9,17 @@ namespace HotelskiSistemServer11
     public class Program
     {
         static async Task Main(string[] args)
-        {/*
-            // Primer kreiranja apartmana
-            var apartman = new Apartman11(101, 1, 3, 4);
-            apartman.ListaGostiju.Add("Marko Markovic");
-            Console.WriteLine(apartman);
+        {
+            Console.WriteLine("[DEBUG] Main metoda startovana");
 
-            var server = new NonBlockingServer(12345, 12346);
-            server.Start();
-        */
             int udpPort = 12345;
             int tcpPort = 12346;
 
             // Kreiraj i pokreni server
-            /*await*/var server = new NonBlockingServer(udpPort, tcpPort);
+            var server = new NonBlockingServer(udpPort, tcpPort);
 
             Console.WriteLine("Pokrećem server...");
-            server.Start();
+            /*await*/ server.Start();
 
             // Server radi dok ne pritisneš taster
             Console.WriteLine("Server radi. Pritisni taster za zaustavljanje...");

@@ -65,17 +65,7 @@ namespace Osoblje1
                 Console.WriteLine("[OSOBLJE] Trenutno nema zadataka.");
             }
 
-            /*
-            // Simuliraj izvršenje zadatka
-            Console.WriteLine("Izvršavam zadatak...");
-            await Task.Delay(2000);
-
-            // Pošalji potvrdu nazad
-            string potvrda = "Zadatak primljen i izvršen";
-            byte[] potvrdaBytes = Encoding.UTF8.GetBytes(potvrda);
-            await networkStream.WriteAsync(potvrdaBytes, 0, potvrdaBytes.Length);
-            Console.WriteLine("Potvrda poslata serveru.");*/
-            
+            await Task.Delay(1000);
             tcpClient.Close();
             Console.WriteLine("[OSOBLJE] Konekcija zatvorena.");
         }

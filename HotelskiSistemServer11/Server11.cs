@@ -6,14 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-
-
-
-//ovo je za KT1-vise ne koristimo
-
-
-
-
+//ovo je za KT1-ne koristimo vise
 
 namespace HotelskiSistemServer11
 {

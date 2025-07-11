@@ -61,7 +61,7 @@ namespace HotelskiSistemServer11
             {
                 {"Pivo", 5},
                 {"Voda", 5},
-                {"Cokoladica", 3}
+                {"Cokoladica", 5 }
             };
             PreostaleNoci = 0;
             TrenutnoZaduzenje = 0;
