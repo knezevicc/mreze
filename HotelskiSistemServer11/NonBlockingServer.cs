@@ -18,6 +18,8 @@ public class NonBlockingServer
     private int udpPort, tcpPort;
 
     private Dictionary<int, DateTime> vremePrijaveGosta = new Dictionary<int, DateTime>();
+    private Dictionary<int, DateTime> poslednjeSmanjenje = new Dictionary<int, DateTime>();
+
 
     private IPEndPoint lastGuestEndPoint;
 
@@ -61,7 +63,7 @@ public class NonBlockingServer
 
     public async Task Start()
     {
-
+        #region podesavanje konekcije
         udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         udpSocket.Bind(new IPEndPoint(IPAddress.Any, udpPort));
         udpSocket.Blocking = false;
@@ -78,6 +80,7 @@ public class NonBlockingServer
         byte[] tcpBuffer = new byte[4096];
 
         Console.WriteLine("[DEBUG] Server je pokrenut i ulazi u glavnu petlju...");
+        #endregion
 
         while (true)
         {
@@ -173,25 +176,59 @@ public class NonBlockingServer
             {
                 if (apartman.Stanje == StanjeApartmana.Zauzet)
                 {
-                    if (apartman.PreostaleNoci > 0)
+                    if (vremePrijaveGosta.TryGetValue(apartman.BrojApartmana, out DateTime vremePrijave))
                     {
-                        apartman.PreostaleNoci--;
+                        double sekundeOdPrijave = (DateTime.Now - vremePrijave).TotalSeconds;
+
+                        if (sekundeOdPrijave >= 10)  // fiksno 10 sekundi od prijave
+                        {
+                            apartman.Stanje = StanjeApartmana.PotrebnoCiscenje;
+                            apartman.TrenutniBrojGostiju = 0;
+                            Console.WriteLine($"[SERVER] Nakon 10 sekundi, apartman {apartman.BrojApartmana} prelazi u PotrebnoCiscenje.");
+                        }
+                    }
+                    /* ovo je aok ne pratim preosale dane
+                    if (vremePrijaveGosta.TryGetValue(apartman.BrojApartmana, out DateTime vremePrijave))
+                    {
+                        double sekundeOdPrijave = (DateTime.Now - vremePrijave).TotalSeconds;
+                        if (sekundeOdPrijave >= apartman.PreostaleNoci)
+                        {
+                            apartman.Stanje = StanjeApartmana.PotrebnoCiscenje;
+                            apartman.TrenutniBrojGostiju = 0;
+                            Console.WriteLine($"[SERVER] Gost je odjavio apartman {apartman.BrojApartmana}, prelazi u PotrebnoCiscenje.");
+                        }
+                    }*/
+                    /* odbrojavanje
+                    if (!poslednjeSmanjenje.ContainsKey(apartman.BrojApartmana))
+                    {
+                        poslednjeSmanjenje[apartman.BrojApartmana] = DateTime.Now;
                     }
 
-                    if (apartman.PreostaleNoci == 0)
+                    TimeSpan proteklo = DateTime.Now - poslednjeSmanjenje[apartman.BrojApartmana];
+                    if (proteklo.TotalSeconds >= 1)
                     {
-                        apartman.Stanje = StanjeApartmana.PotrebnoCiscenje;
-                        apartman.TrenutniBrojGostiju = 0;
-                        Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} sada prelazi u PotrebnoCiscenje.");
-                    }
+                        if (apartman.PreostaleNoci > 0)
+                        {
+                            apartman.PreostaleNoci--;
+                            poslednjeSmanjenje[apartman.BrojApartmana] = DateTime.Now;
+                            Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} preostale noci: {apartman.PreostaleNoci}");
+                        }
+
+                        if (apartman.PreostaleNoci == 0)
+                        {
+                            apartman.Stanje = StanjeApartmana.PotrebnoCiscenje;
+                            apartman.TrenutniBrojGostiju = 0;
+                            Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} sada prelazi u PotrebnoCiscenje.");
+                        }
+                    }*/
                 }
             }
             #endregion
 
+            #region ZANEMARI-prihvatanje TCP konekcija
             //zakomentarisano dok pokusavam drugi nacin
             //problem-osoblje odma vraca da nema zad,
             //bez da ceka da se gost prijavi
-            #region prihvatanje TCP konekcija
             /*
              // TCP - prihvatanje novih konekcija osoblja
              if (tcpListenSocket.Poll(0, SelectMode.SelectRead))
@@ -266,7 +303,7 @@ public class NonBlockingServer
                  }*/
             #endregion
 
-            #region pokusaj 2 prihvatanje tcp konekcija
+            #region GLEDAJ-prihvatanje TCP konekcija
 
             if (tcpListenSocket.Poll(0, SelectMode.SelectRead))
             {
@@ -274,6 +311,7 @@ public class NonBlockingServer
                 client.Blocking = false;
                 tcpClients.Add(client);
                 Console.WriteLine($"[TCP] Novo osoblje povezano: {client.RemoteEndPoint}");
+
             }
             PosaljiZadatkeOsobljuAkoPostoje();
 
@@ -283,26 +321,52 @@ public class NonBlockingServer
 
             // TCP - obrada odgovora osoblja
             for (int i = tcpClients.Count - 1; i >= 0; i--)
-                {
-                    Socket client = tcpClients[i];
-                    if (client.Available > 0)
-                    {
-                        //Console.WriteLine($"[DEBUG] Podaci dostupni za čitanje od {client.RemoteEndPoint}");
-                        int received2 = client.Receive(tcpBuffer);
+            {
+                Socket client = tcpClients[i];
 
-                    if (received2 == 0) {
+                //
+                if (client.Poll(1000, SelectMode.SelectRead))
+                { 
+                    Console.WriteLine("[DEBUG] Podaci su dostupni za čitanje");
+                    int received2 = client.Receive(tcpBuffer);
+                    Console.WriteLine($"[DEBUG] Primljeno bajtova: {received2}");
+                    Console.WriteLine($"[DEBUG]");
+                //
+
+                    //if (client.Available > 0) {
+                    //int received2 = client.Receive(tcpBuffer);
+
+                    /*if (received2 == 0)
+                    {
                         client.Shutdown(SocketShutdown.Both);
                         client.Close();
                         tcpClients.RemoveAt(i);
                         continue;
-                    }
+                    }*/
+                    //   Console.WriteLine($"[DEBUG] Primljeno bajtova: {received2}");
+
                     string response = Encoding.UTF8.GetString(tcpBuffer, 0, received2);
                     Console.WriteLine("$\"[TCP] Primljena potvrda od osoblja: {response}\"");
                     Console.WriteLine($"[TCP] Received from {client.RemoteEndPoint}: {response}");
 
-                        if (response.Contains("Zadatak primljen i izvrsen"))
+                    if (response.Contains("Zadatak primljen i izvrsen"))
+                    {
+                        // Izvuci broj apartmana iz odgovora osoblja
+                        string[] delovi = response.Split(';');
+                        int brojApartmanaPotvrda = -1;
+                        foreach (var deo in delovi)
                         {
-                            foreach (var apartman in apartmani)
+                            if (deo.StartsWith("APARTMAN="))
+                            {
+                                int.TryParse(deo.Split('=')[1], out brojApartmanaPotvrda);
+                                break;
+                            }
+                        }
+
+                        if (brojApartmanaPotvrda != -1)
+                        {
+                            Apartman11 apartman = apartmani.FirstOrDefault(a => a.BrojApartmana == brojApartmanaPotvrda);
+                            if (apartman != null)
                             {
                                 if (apartman.Stanje == StanjeApartmana.PotrebnoCiscenje)
                                 {
@@ -323,8 +387,17 @@ public class NonBlockingServer
                                     Console.WriteLine($"[SERVER] Minibar u apartmanu {apartman.BrojApartmana} dopunjen.");
                                 }
                             }
+                           
                         }
+                        client.Shutdown(SocketShutdown.Both);
+                        client.Close();
+                        tcpClients.RemoveAt(i);
                     }
+                }/*
+                else
+                {
+                    Console.WriteLine("[DEBUG] Nema podataka za čitanje");
+                }*/
                 /*client.Shutdown(SocketShutdown.Both);
                 client.Close();
                 tcpClients.RemoveAt(i);*/
@@ -387,13 +460,13 @@ public class NonBlockingServer
                     break;
                 }
             }
-
+            /*
             if (zadatakPoslat)
             {
                 client.Shutdown(SocketShutdown.Both);
                 client.Close();
                 tcpClients.RemoveAt(i);
-            }
+            }*/
             // Ako nema zadatka, konekcija ostaje otvorena i osoblje nastavlja da čeka
         }
     }

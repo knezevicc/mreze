@@ -39,6 +39,21 @@ namespace Osoblje1
                 Console.Write("Unesite opciju: ");
                 string opcija = Console.ReadLine();
 
+                // Izvuci broj apartmana iz primljenog zadatka (npr: "ZADATAK=Ciscenje;APARTMAN=101")
+                string brojApartmana = "0";
+                var delovi = zadatak.Split(';');
+                foreach (var deo in delovi)
+                {
+                    if (deo.StartsWith("APARTMAN="))
+                    {
+                        brojApartmana = deo.Split('=')[1];
+                        break;
+                    }
+                }
+
+                string potvrda = $"Zadatak primljen i izvrsen;APARTMAN={brojApartmana}";
+
+                /*
                 string potvrda = "";
                 switch (opcija)
                 {
@@ -55,7 +70,7 @@ namespace Osoblje1
                         potvrda = "Nepoznata opcija, ali zadatak izvrsen";
                         break;
                 }
-
+                */
                 byte[] potvrdaBytes = Encoding.UTF8.GetBytes(potvrda);
                 await networkStream.WriteAsync(potvrdaBytes, 0, potvrdaBytes.Length);
                 Console.WriteLine($"[OSOBLJE] Poslata potvrda serveru: {potvrda}");
