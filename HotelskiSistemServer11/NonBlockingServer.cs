@@ -35,32 +35,11 @@ public class NonBlockingServer
         apartmani.Add(new Apartman11(102, 1, 2, 2));
         apartmani.Add(new Apartman11(201, 2, 1, 5));
 
-        //postavljanje minibara
-        apartmani[0].StanjeMinibara = new Dictionary<string, int> { { "Pivo", 5 }, { "Voda", 5 }, { "Cokoladica", 5 } };
-        apartmani[1].StanjeMinibara = new Dictionary<string, int> { { "Pivo", 5 }, { "Voda", 5 }, { "Cokoladica", 5 } };
-        apartmani[2].StanjeMinibara = new Dictionary<string, int> { { "Pivo", 5 }, { "Voda", 6 }, { "Cokoladica", 5 } };
-
-        #region TEST PODACI
-        // TEST: Postavi stanje i alarm da vidiš da li server šalje zadatke
-        /*
-            apartmani[0].Stanje = StanjeApartmana.PotrebnoCiscenje;  // Apartman 101 čeka čišćenje
-            apartmani[1].Alarm = StanjeAlarma.Aktivirano;            // Apartman 102 ima alarm aktiviran
-            apartmani[2].StanjeMinibara["Voda"] = 3;                 // Apartman 201 ima minibar sa niskim zalihama
-
-            apartmani[0].StanjeMinibara = new Dictionary<string, int> {
-        {"Pivo", 5}, {"Voda", 5}, {"Cokoladica", 3}
-    };
-            apartmani[1].StanjeMinibara = new Dictionary<string, int> {
-        {"Pivo", 5}, {"Voda", 5}, {"Cokoladica", 3}
-    };
-            apartmani[2].StanjeMinibara rrrrr= new Dictionary<string, int> {
-        {"Pivo", 5}, {"Voda", 3}, {"Cokoladica", 5}  // Ovde voda ima 3, što je ispod praga 5
-    };
-
-            apartmani[0].Stanje = StanjeApartmana.PotrebnoCiscenje;  // Apartman 101 čeka čišćenje
-            apartmani[1].Alarm = StanjeAlarma.Aktivirano;
-        */
-        #endregion
+   
+        foreach (var a in apartmani)
+        {
+            a.StanjeMinibara = new Dictionary<string, int> { { "Pivo", 5 }, { "Voda", 5 }, { "Cokoladica", 5 } };
+        }
     }
 
     public async Task Start()
@@ -81,27 +60,37 @@ public class NonBlockingServer
         byte[] udpBuffer = new byte[4096];
         byte[] tcpBuffer = new byte[4096];
 
-        Console.WriteLine("[DEBUG] Server je pokrenut i ulazi u glavnu petlju...");
+        //Console.WriteLine("[DEBUG] Server je pokrenut i ulazi u glavnu petlju...");
         #endregion
 
         while (true)
         {
             #region UDP primanje rezervacija
-            // UDP - primanje rezervacija
             if (udpSocket.Available > 0)
             {
                 EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
                 int received = udpSocket.ReceiveFrom(udpBuffer, ref remoteEP);
-                //var gostEndPoint = (IPEndPoint)remoteEP;
                 lastGuestEndPoint = (IPEndPoint)remoteEP;
 
                 byte[] receivedData = new byte[received];
                 Array.Copy(udpBuffer, receivedData, received);
 
+                //string poruka = Encoding.UTF8.GetString(udpBuffer, 0, received);
                 string poruka = Encoding.UTF8.GetString(receivedData);
                 string[] delovi = poruka.Split(';');
 
-                //
+               
+
+                // Klijent traži listu slobodnih apartmana
+                if (poruka == "ZAHTEV=LISTA")
+                {
+                    string lista = VratiListuSlobodnihApartmana();
+                    byte[] listaBytes = Encoding.UTF8.GetBytes(lista);
+                    udpSocket.SendTo(listaBytes, remoteEP);
+                    Console.WriteLine($"[SERVER] Poslao listu slobodnih apartmana klijentu.");
+                    continue;
+                }
+
                 if (poruka.StartsWith("AKCIJA"))
                 {
                     int brojA = int.Parse(delovi[1].Split('=')[1]);
@@ -144,37 +133,66 @@ public class NonBlockingServer
                     }
                     continue;
                 }
-
-
-                if (delovi.Length >= 3 &&
-                    int.TryParse(delovi[0].Split('=')[1], out int brojApartmana) &&
-                    int.TryParse(delovi[1].Split('=')[1], out int brojGostiju) &&
-                    int.TryParse(delovi[2].Split('=')[1], out int brojNoci))
+                else if (poruka.StartsWith("ZAHTEV"))
                 {
-                    Apartman11 apartman = apartmani.FirstOrDefault(a => a.BrojApartmana == brojApartmana);
-                    if (apartman != null)
+                    string lista = VratiListuSlobodnihApartmana();
+                    byte[] listaBytes = Encoding.UTF8.GetBytes(lista);
+                    udpSocket.SendTo(listaBytes, remoteEP);
+                    Console.WriteLine($"[UDP] Poslat odgovor sa listom slobodnih apartmana.");
+                    continue;
+                }
+                else if (poruka.StartsWith("REZERVACIJA"))
+                {
+                    //var delovi1 = poruka.Split(';');
+                    int brojApartmana1 = -1, brojGostiju1 = -1, brojNoci1 = -1;
+
+                    foreach (var deo in delovi)
                     {
-                        apartman.TrenutniBrojGostiju = brojGostiju;
-                        apartman.PreostaleNoci = brojNoci;
-                        apartman.Stanje = StanjeApartmana.Zauzet;
+                        if (deo.StartsWith("APARTMAN="))
+                            int.TryParse(deo.Split('=')[1], out brojApartmana1);
+                        else if (deo.StartsWith("GOSTIJU="))
+                            int.TryParse(deo.Split('=')[1], out brojGostiju1);
+                        else if (deo.StartsWith("NOCI="))
+                            int.TryParse(deo.Split('=')[1], out brojNoci1);
+                    }
 
-                        vremePrijaveGosta[brojApartmana] = DateTime.Now;
+                    if (brojApartmana1 != -1 && brojGostiju1 != -1 && brojNoci1 != -1)
+                    {
+                        Apartman11 apartman = apartmani.FirstOrDefault(a => a.BrojApartmana == brojApartmana1);
+                        if (apartman != null && apartman.Stanje == StanjeApartmana.Prazan &&
+                            brojGostiju1 <= apartman.MaksimalanBrojGostiju)
+                        {
+                            apartman.TrenutniBrojGostiju = brojGostiju1;
+                            apartman.PreostaleNoci = brojNoci1;
+                            apartman.Stanje = StanjeApartmana.Zauzet;
+                            vremePrijaveGosta[brojApartmana1] = DateTime.Now;
 
-                        Console.WriteLine($"[UDP] Gost prijavljen: Apartman={brojApartmana}, Gostiju={brojGostiju}, Noci={brojNoci}");
+                            string potvrda = $"POTVRDA=OK;APARTMAN={brojApartmana1}";
+                            byte[] potvrdaBytes = Encoding.UTF8.GetBytes(potvrda);
+                            udpSocket.SendTo(potvrdaBytes, remoteEP);
 
-                        string potvrda = $"POTVRDA=OK;APARTMAN={brojApartmana}";
-                        byte[] potvrdaBytes = Encoding.UTF8.GetBytes(potvrda);
-                        udpSocket.SendTo(potvrdaBytes, remoteEP);
+                            Console.WriteLine($"[SERVER] Gost prijavljen: Apartman={brojApartmana1}, Gosti={brojGostiju1}, Noci={brojNoci1}");
+                        }
+                        else
+                        {
+                            string error = "GRESKA=Nema slobodnog apartmana ili apartman ne postoji";
+                            byte[] errorBytes = Encoding.UTF8.GetBytes(error);
+                            udpSocket.SendTo(errorBytes, remoteEP);
+                        }
                     }
                     else
                     {
-                        string error = "GRESKA=Apartman ne postoji";
+                        string error = "GRESKA=Nevalidan zahtev (nedostaju podaci)";
                         byte[] errorBytes = Encoding.UTF8.GetBytes(error);
                         udpSocket.SendTo(errorBytes, remoteEP);
                     }
+
                 }
+                else { string error = "ne pocinje sa rez/akc/zaht "; udpSocket.SendTo(Encoding.UTF8.GetBytes(error), remoteEP); }
+
             }
             #endregion
+            
 
             #region smanjivanje dana
             foreach (var apartman in apartmani)
@@ -231,7 +249,6 @@ public class NonBlockingServer
             #endregion
 
             #region GLEDAJ-prihvatanje TCP konekcija
-
             if (tcpListenSocket.Poll(0, SelectMode.SelectRead))
             {
                 Socket client = tcpListenSocket.Accept();
@@ -240,13 +257,16 @@ public class NonBlockingServer
                 Console.WriteLine($"[TCP] Novo osoblje povezano: {client.RemoteEndPoint}");
 
             }
-            PosaljiZadatkeOsobljuAkoPostoje();
-            ProveriBoravakGostiju();
 
+            PosaljiZadatkeOsobljuAkoPostoje();
+
+            ProveriBoravakGostiju();
+            
             #endregion
 
             #region TCP obrada odgovora osoblja
             // TCP - obrada odgovora osoblja
+
             for (int i = tcpClients.Count - 1; i >= 0; i--)
             {
                 Socket client = tcpClients[i];
@@ -262,17 +282,9 @@ public class NonBlockingServer
                     {
                         string[] delovi = response.Split(';');
                         int brojApartmanaPotvrda = -1;
-                        //                        int tipZadatka = 0; // 1-ciscenje, 2-alarm, 3-minibar
                         string vrstaZadatka = "";
 
-                        /*
-                        if (response.Contains("Ciscenje"))
-                            tipZadatka = 1;
-                        else if (response.Contains("SanacijaAlarma"))
-                            tipZadatka = 2;
-                        else if (response.Contains("UpravljanjeMinibarem"))
-                            tipZadatka = 3;
-*/
+                        
                         foreach (var deo in delovi)
                         {
 
@@ -287,11 +299,11 @@ public class NonBlockingServer
                         }
 
                         //provera samo
-                        Console.WriteLine($"[DEBUG] vrstaZadatka = '{vrstaZadatka}', brojApartmanaPotvrda = {brojApartmanaPotvrda}");
+                        //Console.WriteLine($"[DEBUG] vrstaZadatka = '{vrstaZadatka}', brojApartmanaPotvrda = {brojApartmanaPotvrda}");
                         if (apartmani.Any(a => a.BrojApartmana == brojApartmanaPotvrda))
                         {
                             var apartman = apartmani.First(a => a.BrojApartmana == brojApartmanaPotvrda);
-                            Console.WriteLine($"[DEBUG] Apartman pronadjen: {apartman.BrojApartmana}");
+                           // Console.WriteLine($"[DEBUG] Apartman pronadjen: {apartman.BrojApartmana}");
 
                             switch (vrstaZadatka)
                             {
@@ -325,8 +337,8 @@ public class NonBlockingServer
                             poslatiZadaci.Remove(brojApartmanaPotvrda * 100 + GetZadatakKod(vrstaZadatka)); // vidi napomenu dole
 
                             Apartman11 apartman = apartmani.FirstOrDefault(a => a.BrojApartmana == brojApartmanaPotvrda);
-                            Console.WriteLine($"DEBUG: brojApartmanaPotvrda={brojApartmanaPotvrda}");
-                            Console.WriteLine($"DEBUG: vrstaZadatka='{vrstaZadatka}'");
+                            //Console.WriteLine($"DEBUG: brojApartmanaPotvrda={brojApartmanaPotvrda}");
+                            //Console.WriteLine($"DEBUG: vrstaZadatka='{vrstaZadatka}'");
                             if (apartman != null)
                             {
                                 switch (vrstaZadatka)
@@ -513,6 +525,46 @@ public class NonBlockingServer
     }
 */
 
+
+    private void PosaljiZadatkeOsobljuAkoPostoje()
+    {
+        for (int i = tcpClients.Count - 1; i >= 0; i--)
+        {
+            var client = tcpClients[i];
+
+            foreach (var apartman in apartmani)
+            {
+                int idCiscenje = apartman.BrojApartmana * 100 + 1;
+                if (apartman.Stanje == StanjeApartmana.PotrebnoCiscenje && !poslatiZadaci.Contains(idCiscenje))
+                {
+                    string zadatak = $"ZADATAK=Ciscenje;APARTMAN={apartman.BrojApartmana}";
+                    PosaljiZadatak(client, zadatak);
+                    poslatiZadaci.Add(idCiscenje);
+                    break; // šaljemo samo jedan zadatak po ciklusu
+                }
+
+                int idAlarm = apartman.BrojApartmana * 100 + 2;
+                if (apartman.Alarm == StanjeAlarma.Aktivirano && !poslatiZadaci.Contains(idAlarm))
+                {
+                    string zadatak = $"ZADATAK=SanacijaAlarma;APARTMAN={apartman.BrojApartmana}";
+                    PosaljiZadatak(client, zadatak);
+                    poslatiZadaci.Add(idAlarm);
+                    break;
+                }
+
+                int idMinibar = apartman.BrojApartmana * 100 + 3;
+                if (apartman.StanjeMinibara.Values.Any(v => v < 5) && !poslatiZadaci.Contains(idMinibar))
+                {
+                    string zadatak = $"ZADATAK=UpravljanjeMinibarem;APARTMAN={apartman.BrojApartmana}";
+                    PosaljiZadatak(client, zadatak);
+                    poslatiZadaci.Add(idMinibar);
+                    break;
+                }
+            }
+        }
+    }
+
+    /*  OVOOOOOO JE ORIG
     private void PosaljiZadatkeOsobljuAkoPostoje()
     {
         for (int i = tcpClients.Count - 1; i >= 0; i--)
@@ -559,7 +611,7 @@ public class NonBlockingServer
 
             // Ako nema zadatka, ne šaljemo ništa, konekcija ostaje otvorena
         }
-    }
+    }*/
 
     private void PosaljiZadatak(Socket client, string zadatak)
     {
@@ -604,4 +656,36 @@ public class NonBlockingServer
         else
             return 0;
     }
+
+    private string VratiListuSlobodnihApartmana()
+    {
+        var slobodni = apartmani.Where(a => a.Stanje == StanjeApartmana.Prazan)
+                                 .Select(a => $"Apartman {a.BrojApartmana} | Klasa {a.Klasa} | MaxGostiju {a.MaksimalanBrojGostiju}")
+                                 .ToList();
+
+        if (slobodni.Count == 0)
+            return "Nema slobodnih apartmana trenutno.";
+
+        return string.Join("\n", slobodni);
+    }
+
+    private string ObradiZahtevZaRezervaciju(string klasaStr, string brojGostijuStr)
+    {
+        if (!int.TryParse(klasaStr, out int klasa) || !int.TryParse(brojGostijuStr, out int brojGostiju))
+            return "GRESKA: Neispravan unos.";
+
+        var slobodan = apartmani.FirstOrDefault(a => a.Stanje == StanjeApartmana.Prazan &&
+                                                     a.Klasa == klasa &&
+                                                     a.MaksimalanBrojGostiju >= brojGostiju);
+
+        if (slobodan == null)
+            return "GRESKA: Nema slobodnih apartmana tražene klase za taj broj gostiju.";
+
+        // Rezervacija odobrena
+        slobodan.Stanje = StanjeApartmana.Zauzet;
+        slobodan.TrenutniBrojGostiju = brojGostiju;
+
+        return $"ODOBRENO;APARTMAN={slobodan.BrojApartmana};MAKS_GOSTIJU={slobodan.MaksimalanBrojGostiju}";
+    }
+
 }

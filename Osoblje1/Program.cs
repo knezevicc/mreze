@@ -31,13 +31,31 @@ namespace Osoblje1
                     while (true)
                     {
                         int bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
-                        if (bytesRead == 0)
-                        {
-                            Console.WriteLine("[OSOBLJE] Server je zatvorio konekciju.");
-                            break;
-                        }
 
-                        string zadatak = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        try //jer je bacao exception bez ovoga 
+                        {
+                            if (bytesRead == 0)
+                            {
+                                Console.WriteLine("[OSOBLJE] Server je zatvorio konekciju.");
+                                //break;
+                                return;
+                            }
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            Console.WriteLine("Stream je zatvoren.");
+                        }
+                        catch (IOException ex)
+                        {
+                            // Može se desiti prilikom zatvaranja mreže
+                            Console.WriteLine($"IOException: {ex.Message}");
+                        }
+                        catch (Exception ex)
+                        {
+                            // Ostali neočekivani izuzeci
+                            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+                        }
+                            string zadatak = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                         Console.WriteLine($"\n[OSOBLJE] Primljen zadatak: {zadatak}");
 
                         if (zadatak == "NEMA_ZADATAKA")
@@ -89,76 +107,6 @@ namespace Osoblje1
                     Console.WriteLine("[OSOBLJE] Konekcija zatvorena.");
                 }
             }
-
-
         }
-            /*{
-            var tcpClient = new TcpClient();
-            await tcpClient.ConnectAsync(serverIp, serverPort);
-            Console.WriteLine("Povezano na server putem TCP.");
-
-            var networkStream = tcpClient.GetStream();
-
-            // Čitaj zadatke od servera
-            byte[] buffer = new byte[1024];
-            int bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
-            string zadatak = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            Console.WriteLine("Primljen zadatak: " + zadatak);
-
-            if (zadatak.StartsWith("ZADATAK"))
-            {
-                Console.WriteLine("Izaberite zadatak koji želite da izvršite:");
-                Console.WriteLine("1 - Čišćenje apartmana");
-                Console.WriteLine("2 - Sanacija alarma");
-                Console.WriteLine("3 - Upravljanje minibarem");
-
-                Console.Write("Unesite opciju: ");
-                string opcija = Console.ReadLine();
-
-                // Izvuci broj apartmana iz primljenog zadatka (npr: "ZADATAK=Ciscenje;APARTMAN=101")
-                string brojApartmana = "0";
-                var delovi = zadatak.Split(';');
-                foreach (var deo in delovi)
-                {
-                    if (deo.StartsWith("APARTMAN="))
-                    {
-                        brojApartmana = deo.Split('=')[1];
-                        break;
-                    }
-                }
-
-                string potvrda = $"Zadatak primljen i izvrsen;APARTMAN={brojApartmana}";
-
-                /*
-                string potvrda = "";
-                switch (opcija)
-                {
-                    case "1":
-                        potvrda = "Zadatak primljen i izvrsen: Ciscenje apartmana";
-                        break;
-                    case "2":
-                        potvrda = "Zadatak primljen i izvrsen: Sanacija alarma";
-                        break;
-                    case "3":
-                        potvrda = "Zadatak primljen i izvrsen: Upravljanje minibarem";
-                        break;
-                    default:
-                        potvrda = "Nepoznata opcija, ali zadatak izvrsen";
-                        break;
-                }
-                //
-                byte[] potvrdaBytes = Encoding.UTF8.GetBytes(potvrda);
-                await networkStream.WriteAsync(potvrdaBytes, 0, potvrdaBytes.Length);
-                Console.WriteLine($"[OSOBLJE] Poslata potvrda serveru: {potvrda}");
-            }
-            else
-            {
-                Console.WriteLine("[OSOBLJE] Trenutno nema zadataka.");
-            }
-
-            await Task.Delay(1000);
-            tcpClient.Close();
-            Console.WriteLine("[OSOBLJE] Konekcija zatvorena.");
-        }*/
     }
 }

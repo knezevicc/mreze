@@ -36,6 +36,14 @@ namespace Gost1
             BrojPasosa = brojPasosa;
         }
 
+        public Gost11(string ime, string prezime, DateTime datumRodjenja, string brojPasosa)
+        {
+            Ime = ime;
+            Prezime = prezime;
+            DatumRodjenja = datumRodjenja;
+            BrojPasosa = brojPasosa;
+        }
+
         // Serijalizacija objekta u niz bajtova
         public byte[] Serijalizuj()
         {
