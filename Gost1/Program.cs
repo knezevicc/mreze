@@ -22,6 +22,8 @@ namespace Gost1
 
             Console.Write("Unesite broj noći: ");
             int brojNoci = int.Parse(Console.ReadLine());
+
+            //prijava preko UDP
             using (var udpClient = new UdpClient())
             {
                 string poruka = $"APARTMAN={brojApartmana};GOSTIJU={brojGostiju};NOCI={brojNoci}";
@@ -33,7 +35,7 @@ namespace Gost1
                 var result = await udpClient.ReceiveAsync();
                 string potvrda = Encoding.UTF8.GetString(result.Buffer);
                 Console.WriteLine("[KLIJENT] Odgovor servera: " + potvrda);
-            }
+            
 
             Console.WriteLine($"\nGost boravi {brojNoci} sekundi (1 sekunda = 1 noć). Možete slati zahteve osoblju dok traje boravak.");
 
@@ -43,9 +45,9 @@ namespace Gost1
             {
                 Console.WriteLine("\nIzaberite opciju:");
                 Console.WriteLine("1 - Aktivacija alarma");
-                Console.WriteLine("2 - Upravljanje minibarom (uzima se 1 voda)");
+                Console.WriteLine("2 - Upravljanje minibarom");
                 Console.WriteLine("3 - Zahtev za čišćenje apartmana");
-                Console.WriteLine("X - Izlaz iz menija dok traje boravak");
+                Console.WriteLine("X - Izlaz iz menija");
 
                 Console.Write("Unos: ");
                 string opcija = Console.ReadLine();
@@ -53,93 +55,128 @@ namespace Gost1
                 if (opcija.ToUpper() == "X")
                     break;
 
-                string zahtev;
+                //pokusaj slanja preko udp serveru
+                List<string> zahteviZaSlanje = new List<string>();
+
                 if (opcija == "1")
-                    zahtev = $"ZAHTEV=AktivirajAlarm;APARTMAN={brojApartmana}";
-                else if (opcija == "2")
-                    zahtev = $"ZAHTEV=MinibarVoda;APARTMAN={brojApartmana}";
-                else if (opcija == "3")
-                    zahtev = $"ZAHTEV=Ciscenje;APARTMAN={brojApartmana}";
-                else
-                    zahtev = "NEPOZNAT_ZAHTEV";
-
-                using (TcpClient tcpClient = new TcpClient())
                 {
-                    await tcpClient.ConnectAsync("127.0.0.1", 12346);
-                    NetworkStream stream = tcpClient.GetStream();
-
-                    byte[] zahtevBytes = Encoding.UTF8.GetBytes(zahtev);
-                    await stream.WriteAsync(zahtevBytes, 0, zahtevBytes.Length);
-                    Console.WriteLine($"[KLIJENT] Poslat zahtev: {zahtev}");
-
-                    byte[] buffer = new byte[1024];
-                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    string odgovor = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    Console.WriteLine($"[KLIJENT] Odgovor servera: {odgovor}");
+                    zahteviZaSlanje.Add($"AKCIJA=ALARM;APARTMAN={brojApartmana}");
                 }
-            }
-            /*
-            using (var udpClient = new UdpClient())
-            {
-                string poruka = $"APARTMAN={brojApartmana};GOSTIJU={brojGostiju};NOCI={brojNoci}";
-                byte[] porukaBytes = Encoding.UTF8.GetBytes(poruka);
-
-                //slanje rez serverurr
-                await udpClient.SendAsync(porukaBytes, porukaBytes.Length, "127.0.0.1", 12345);
-                Console.WriteLine("[KLIJENT] Poslata rezervacija serveru.");
-
-                //osluskuje potvrdu rez
-                var result = await udpClient.ReceiveAsync();
-                string potvrda = Encoding.UTF8.GetString(result.Buffer);
-                Console.WriteLine("[KLIJENT] Odgovor servera: " + potvrda);
-
-                Console.WriteLine($"Tokom boravka ({brojNoci} sekundi) možete slati zahteve:");
-                Console.WriteLine("1 - Aktiviraj alarm");
-                Console.WriteLine("2 - Uzmi iz minibara");
-                Console.WriteLine("3 - Zatraži čišćenje sobe");
-
-                DateTime krajBoravka = DateTime.Now.AddSeconds(brojNoci);
-
-                while (DateTime.Now < krajBoravka)
+                else if (opcija == "2")
                 {
-                    if (Console.KeyAvailable)
+                    Console.WriteLine("Unesite naziv artikla iz minibara (Pivo, Voda, Cokoladica), ili 'X' za kraj:");
+
+                    while (true)
                     {
-                        var key = Console.ReadKey(true).Key;
-                        string zahtev = "";
+                        Console.Write("Artikal: ");
+                        string artikal = Console.ReadLine();
+                        if (string.Equals(artikal, "X", StringComparison.OrdinalIgnoreCase))
+                            break;
 
-                        if (key == ConsoleKey.D1)
-                        {
-                            zahtev = $"AKCIJA=ALARM;APARTMAN={brojApartmana}";
-                        }
-                        else if (key == ConsoleKey.D2)
-                        {
-                            zahtev = $"AKCIJA=MINIBAR;APARTMAN={brojApartmana}";
-                        }
-                        else if (key == ConsoleKey.D3)
-                        {
-                            zahtev = $"AKCIJA=CISCENJE;APARTMAN={brojApartmana}";
-                        }
-
-                        if (!string.IsNullOrEmpty(zahtev))
-                        {
-                            byte[] zahtevBytes = Encoding.UTF8.GetBytes(zahtev);
-                            await udpClient.SendAsync(zahtevBytes, zahtevBytes.Length, "127.0.0.1", 12345);
-                            Console.WriteLine($"[KLIJENT] Poslat zahtev: {zahtev}");
-
-                            var response = await udpClient.ReceiveAsync();
-                            string odgovor = Encoding.UTF8.GetString(response.Buffer);
-                            Console.WriteLine($"[KLIJENT] Odgovor servera: {odgovor}");
-                        }
+                        if (artikal == "Pivo" || artikal == "Voda" || artikal == "Cokoladica")
+                            zahteviZaSlanje.Add($"AKCIJA=MINIBAR;APARTMAN={brojApartmana};ARTIKAL={artikal}");
+                        else
+                            Console.WriteLine("Nepoznat artikal, pokušajte ponovo.");
                     }
 
-                    await Task.Delay(100); // smanjuje CPU opterećenje
+                    if (zahteviZaSlanje.Count == 0)
+                    {
+                        Console.WriteLine("Niste izabrali nijedan artikal iz minibara.");
+                        continue;
+                    }
                 }
-            }*/
+                else if (opcija == "3")
+                {
+                    zahteviZaSlanje.Add($"AKCIJA=CISCENJE;APARTMAN={brojApartmana}");
+                }
+                else
+                {
+                    Console.WriteLine("Nepoznata opcija.");
+                    continue;
+                }
+
+                foreach (var zahtev in zahteviZaSlanje)
+                {
+                    byte[] zahtevBytes = Encoding.UTF8.GetBytes(zahtev);
+                    await udpClient.SendAsync(zahtevBytes, zahtevBytes.Length, "127.0.0.1", 12345);
+                    var odgovor = await udpClient.ReceiveAsync();
+                    Console.WriteLine("[KLIJENT] Odgovor servera: " + Encoding.UTF8.GetString(odgovor.Buffer));
+                }
+            }
+
+            /*
+            string zahtev;
+            if (opcija == "1")
+                zahtev = $"ZAHTEV=AktivirajAlarm;APARTMAN={brojApartmana}";
+            else if (opcija == "2") { 
+
+                // Minibar - korisnik bira artikal
+                Console.WriteLine("Unesite naziv artikla iz minibara (Pivo, Voda, Cokoladica), ili 'X' za kraj:");
+                List<string> izabraniArtikli = new List<string>();
+
+                while (true)
+                {
+                    Console.Write("Artikal: ");
+                    string artikal = Console.ReadLine();
+
+                    if (string.Equals(artikal, "X", StringComparison.OrdinalIgnoreCase))
+                        break;
+
+                    if (artikal == "Pivo" || artikal == "Voda" || artikal == "Cokoladica")
+                    {
+                        izabraniArtikli.Add(artikal);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Nepoznat artikal, pokušajte ponovo.");
+                    }
+                }
+
+                if (izabraniArtikli.Count == 0)
+                {
+                    Console.WriteLine("Niste izabrali nijedan artikal iz minibara.");
+                    continue; // preskoci slanje zahteva ako nije izabrano ništa
+                }
+
+                // Saljemo jedan zahtev za svaki artikal posebno
+                foreach (var artikal in izabraniArtikli)
+                {
+                    zahtev = $"AKCIJA=MINIBAR;APARTMAN={brojApartmana};ARTIKAL={artikal}";
+                    await PosaljiTcpZahtev(zahtev);
+                }
+                continue; // vec poslali zahtev, idemo na sledecu iteraciju pž
+            }
+                /*zahtev = $"ZAHTEV=MinibarVoda;APARTMAN={brojApartmana}";//
+            else if (opcija == "3")
+                zahtev = $"ZAHTEV=Ciscenje;APARTMAN={brojApartmana}";
+            else
+                zahtev = "NEPOZNAT_ZAHTEV";
+
+            await PosaljiTcpZahtev(zahtev){ }
+            */
+
+        }
 
             // Sačekaj server da radi (za demo)
             Console.WriteLine("Pritisni bilo koji taster za kraj...");
             Console.ReadKey();
         }
-        
+        private static async Task PosaljiTcpZahtev(string zahtev)
+        {
+            using (TcpClient tcpClient = new TcpClient())
+            {
+                await tcpClient.ConnectAsync("127.0.0.1", 12346);
+                NetworkStream stream = tcpClient.GetStream();
+
+                byte[] zahtevBytes = Encoding.UTF8.GetBytes(zahtev);
+                await stream.WriteAsync(zahtevBytes, 0, zahtevBytes.Length);
+                Console.WriteLine($"[KLIJENT] Poslat zahtev: {zahtev}");
+
+                byte[] buffer = new byte[1024];
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                string odgovor = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                Console.WriteLine($"[KLIJENT] Odgovor servera: {odgovor}");
+            }
+        }
     }
 }
