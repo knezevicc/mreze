@@ -2,4 +2,5 @@
   HotelskiSistemServer.cpp
   Server.cpp
   Generating Code...
-  HotelskiSistemServer.vcxproj -> C:\Users\Home\source\repos\mreze\HotelskiSistem\x64\Debug\HotelskiSistemServer.exe
+  LINK : C:\Users\Home\source\repos\mreze1\x64\Debug\HotelskiSistemServer.exe not found or not built by the last incremental link; performing full link
+  HotelskiSistemServer.vcxproj -> C:\Users\Home\source\repos\mreze1\x64\Debug\HotelskiSistemServer.exe

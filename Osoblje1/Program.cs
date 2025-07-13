@@ -30,10 +30,11 @@ namespace Osoblje1
 
                     while (true)
                     {
-                        int bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
+                        int bytesRead = 0;
 
                         try //jer je bacao exception bez ovoga 
                         {
+                            bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
                             if (bytesRead == 0)
                             {
                                 Console.WriteLine("[OSOBLJE] Server je zatvorio konekciju.");
