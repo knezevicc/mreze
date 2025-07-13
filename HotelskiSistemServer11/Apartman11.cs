@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using Gost1;
 
 namespace HotelskiSistemServer11
 {
@@ -37,9 +38,11 @@ namespace HotelskiSistemServer11
         public int PreostaleNoci { get; set; }
         public double TrenutnoZaduzenje { get; set; }
 
+        public List<Gost11> Gosti { get; set; } = new List<Gost11>();
+
         public Apartman11()
         {
-            ListaGostiju = new List<string>();
+            //ListaGostiju = new List<string>();
             StanjeMinibara = new Dictionary<string, int>();
             Stanje = StanjeApartmana.Prazan;
             Alarm = StanjeAlarma.Normalno;
@@ -56,7 +59,7 @@ namespace HotelskiSistemServer11
             TrenutniBrojGostiju = 0;
             Stanje = StanjeApartmana.Prazan;
             Alarm = StanjeAlarma.Normalno;
-            ListaGostiju = new List<string>();
+           // ListaGostiju = new List<string>();
             StanjeMinibara = new Dictionary<string, int>()
             {
                 {"Pivo", 5},
@@ -109,7 +112,7 @@ namespace HotelskiSistemServer11
         public override string ToString()
         {
             string minibarStanje = string.Join(", ", StanjeMinibara.Select(x => $"{x.Key}-{x.Value}"));
-            string gosti = ListaGostiju.Count > 0 ? string.Join(", ", ListaGostiju) : "Nema gostiju";
+            string gosti = Gosti.Count > 0 ? string.Join(", ", Gosti.Select(g => $"{g.Ime} {g.Prezime}")) : "Nema gostiju";
             return $"Apartman {BrojApartmana} | Sprat: {Sprat}, Klasa: {Klasa}, MaxGostiju: {MaksimalanBrojGostiju}, " +
                    $"TrenutnoGostiju: {TrenutniBrojGostiju}, PreostaleNoci: {PreostaleNoci}, " +
                    $"Stanje: {Stanje}, Alarm: {Alarm}, Zaduzenje: {TrenutnoZaduzenje} EUR, " +

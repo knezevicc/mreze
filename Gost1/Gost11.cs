@@ -21,13 +21,13 @@ namespace Gost1
     {
         public string Ime { get; set; }
         public string Prezime { get; set; }
-        public Pol Pol { get; set; }
+        public string Pol { get; set; }
         public DateTime DatumRodjenja { get; set; }
         public string BrojPasosa { get; set; }
 
         public Gost11() { }
 
-        public Gost11(string ime, string prezime, Pol pol, DateTime datumRodjenja, string brojPasosa)
+        public Gost11(string ime, string prezime, string pol, DateTime datumRodjenja, string brojPasosa)
         {
             Ime = ime;
             Prezime = prezime;
