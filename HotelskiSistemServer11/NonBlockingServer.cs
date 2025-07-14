@@ -149,6 +149,20 @@ public class NonBlockingServer
                           //apartman.TrenutniBrojGostiju = 0;
                             odgovor = "Zatraženo čišćenje sobe u medjuboravku!!(4).";
                             PosaljiZadatkeOsobljuAkoPostoje();
+
+                            //dodaj slanje BORAVAK_ZAVRSEN klijentu:**
+                            string porukaZavrsetak = $"BORAVAK_ZAVRSEN;APARTMAN={apartman.BrojApartmana}";
+                            byte[] porukaBytes = Encoding.UTF8.GetBytes(porukaZavrsetak);
+
+                            if (apartmanEndPoints.TryGetValue(apartman.BrojApartmana, out IPEndPoint ep))
+                            {
+                                udpSocket.SendTo(porukaBytes, ep);
+                                Console.WriteLine($"[SERVER] Poslata poruka BORAVAK_ZAVRSEN za apartman {apartman.BrojApartmana} klijentu na {ep}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[SERVER] Nema sačuvan EndPoint za apartman {apartman.BrojApartmana}, nije poslata BORAVAK_ZAVRSEN.");
+                            }
                         }
                         else
                         {

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
+using System.Data;
 
 namespace Gost1
 {
@@ -14,6 +15,7 @@ namespace Gost1
         {
             using (var udpClient = new UdpClient())
             {
+                bool boravakZavrsen = false;
 
                 int brojNoci;
 
@@ -100,27 +102,39 @@ namespace Gost1
 
                 //udpClient.Client.ReceiveTimeout = 100; // doda timeout da ne blokira stalno
 
-                
-                while (DateTime.Now < krajBoravka)
-                {
-                    while (udpClient.Available > 0) { 
-                    // Provera da li je stigla poruka da je boravak završen
-                    
-                        var odgovor = await udpClient.ReceiveAsync();
-                        string poruka = Encoding.UTF8.GetString(odgovor.Buffer);
 
-                        if (poruka.StartsWith("BORAVAK_ZAVRSEN"))
+                var listenTask = Task.Run(async () =>
+                {
+                    //while (DateTime.Now < krajBoravka)
+                    //{
+                    //  while (udpClient.Available > 0) { 
+                    // Provera da li je stigla poruka da je boravak završen
+
+                    while (!boravakZavrsen)
+                    {
+                        try
                         {
-                            Console.WriteLine("\n[SERVER] Boravak je završen! Molimo vas da napustite apartman.");
-                            //break; // izlaz iz petlje jer je boravak gotov
-                            goto KrajBoravka;
+                            var odgovor = await udpClient.ReceiveAsync();
+                            string poruka = Encoding.UTF8.GetString(odgovor.Buffer);
+
+                            if (poruka.StartsWith("BORAVAK_ZAVRSEN"))
+                            {
+                                Console.WriteLine("\n[SERVER1] Boravak je završen! Molimo vas da napustite apartman.");
+                                //break; // izlaz iz petlje jer je boravak gotov
+                                boravakZavrsen = true;
+                            }
+                            else
+                            {
+                                Console.WriteLine("[SERVER] " + poruka);
+                            }
                         }
-                        else
+                        catch (Exception)
                         {
-                            Console.WriteLine("[SERVER] " + poruka);
+                            // ignoriši timeout ako ga koristiš
                         }
                     }
-
+                });
+                while(DateTime.Now < krajBoravka && !boravakZavrsen) { 
                     Console.WriteLine("\nIzaberite opciju:");
                     Console.WriteLine("1 - Aktivacija alarma");
                     Console.WriteLine("2 - Upravljanje minibarom");
@@ -166,6 +180,22 @@ namespace Gost1
                     else if (opcija == "3")
                     {
                         zahteviZaSlanje.Add($"AKCIJA=CISCENJE2;APARTMAN={brojApartmana}");
+                        /*while (true)
+                        {
+                            var odgovor = await udpClient.ReceiveAsync();
+                            string poruka = Encoding.UTF8.GetString(odgovor.Buffer);
+
+                            if (poruka.StartsWith("BORAVAK_ZAVRSEN"))
+                            {
+                                Console.WriteLine("\n[SERVER] Boravak je završen! Molimo vas da napustite apartman.");
+                                break;
+                            }
+                            else
+                            {
+                                Console.WriteLine("[SERVER] " + poruka);
+                            }
+                        }
+                        break; */
                     }
                     else if (opcija == "4")
                     {
@@ -183,11 +213,14 @@ namespace Gost1
                         byte[] zahtevBytes1 = Encoding.UTF8.GetBytes(zahtev1);
                         await udpClient.SendAsync(zahtevBytes1, zahtevBytes1.Length, "127.0.0.1", 12345);
                         var odgovor = await udpClient.ReceiveAsync();
-                        Console.WriteLine("[KLIJENT] Odgovor servera: " + Encoding.UTF8.GetString(odgovor.Buffer));
+
+                        string poruka = Encoding.UTF8.GetString(odgovor.Buffer);
+
+                        Console.WriteLine("[KLIJENT] Odgovor servera: " + poruka);
                     }
                 }
-                KrajBoravka:
-                Console.WriteLine("\nBoravak je završen. Pritisni bilo koji taster za kraj...");
+                //KrajBoravka:
+                //Console.WriteLine("\nBoravak je završen. Pritisni bilo koji taster za kraj...");
                 Console.ReadKey();
             }
         }
