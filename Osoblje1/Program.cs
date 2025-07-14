@@ -15,8 +15,6 @@ namespace Osoblje1
             Console.ReadKey();
         }
 
-
-
         static async Task TcpOsobljeClient(string serverIp, int serverPort)
         {
             using (TcpClient tcpClient = new TcpClient())
@@ -83,6 +81,7 @@ namespace Osoblje1
                         Console.WriteLine("1 - Sanacija alarma");
                         Console.WriteLine("2 - Upravljanje minibarem");
                         Console.WriteLine("3 - Čišćenje apartmana");
+                        Console.WriteLine("4 - Traženo čišćenje apartmana");
                         Console.WriteLine("X - Izlaz");
 
                         Console.Write("Unesite opciju: ");
