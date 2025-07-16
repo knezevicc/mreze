@@ -36,7 +36,16 @@ namespace HotelskiSistemServer11
         public List<string> ListaGostiju { get; set; }  // ovde možeš staviti stringove sa imenima gostiju
         public Dictionary<string, int> StanjeMinibara { get; set; }
         public int PreostaleNoci { get; set; }
-        public double TrenutnoZaduzenje { get; set; }
+        public int UkupnoNocenja { get; set; } = 0; // NOVO za pamcenje ukupnih nocenja
+
+        public double TrenutnoZaduzenje { get; set; } = 0;
+
+
+        public static readonly Dictionary<string, double> CenaMinibara = new Dictionary<string, double> { 
+            {"Pivo", 3.0},
+            {"Voda", 1.5},
+            {"Cokoladica", 2.0}
+        };
 
         public List<Gost11> Gosti { get; set; } = new List<Gost11>();
 
@@ -81,13 +90,64 @@ namespace HotelskiSistemServer11
             if (StanjeMinibara.ContainsKey(artikal) && StanjeMinibara[artikal] > 0)
             {
                 StanjeMinibara[artikal]--;
-                DodajUslugu($"Minibar-{artikal}", 2.5);
-                Console.WriteLine($"[APARTMAN {BrojApartmana}] Iskorišćen artikal '{artikal}' iz minibara.");
+                double cena = CenaMinibara.ContainsKey(artikal) ? CenaMinibara[artikal] : 2.5; // podrazumevana cena ako nema u rečniku
+                DodajUslugu($"Minibar-{artikal}", cena);
+                Console.WriteLine($"[APARTMAN {BrojApartmana}] Iskorišćen artikal '{artikal}' iz minibara po ceni {cena} EUR.");
             }
             else
             {
                 Console.WriteLine($"[APARTMAN {BrojApartmana}] Artikal '{artikal}' nije dostupan u minibaru.");
             }
+        }
+
+        public void NaplatiNocenja()
+        {
+           double cenaPoNoci;
+           switch (Klasa) {
+                case 1:
+                    cenaPoNoci = 20;
+                    break;
+                case 2:
+                    cenaPoNoci = 30;
+                    break;
+                case 3:
+                    cenaPoNoci = 50;
+                    break;
+                default:
+                    cenaPoNoci = 20;
+                    break;
+            }
+            //TrenutnoZaduzenje += UkupnoNocenja * cenaPoNoci;
+            //DodajUslugu($"Noćenje x{UkupnoNocenja}:", TrenutnoZaduzenje);
+            double ukupno = UkupnoNocenja * cenaPoNoci;
+            DodajUslugu($"Noćenje x{UkupnoNocenja} :", ukupno);
+
+
+            //double ukupno = cenaPoNoci * PreostaleNoci * TrenutniBrojGostiju;
+            //DodajUslugu($"Noćenje x{PreostaleNoci} za {TrenutniBrojGostiju} gosta", ukupno);
+            //DodajUslugu($"Noćenje x{UkupnoNocenja} za {TrenutniBrojGostiju} gosta", TrenutnoZaduzenje);
+        }
+
+        public void NaplatiAlarm()
+        {
+            DodajUslugu("Aktivacija alarma", 5);
+        }
+
+        public void NaplatiTrazenoCiscenje()
+        {
+            DodajUslugu("Traženo čišćenje", 7);
+        }
+
+        public void NaplatiZavrsnoCiscenje()
+        {
+            DodajUslugu("Završno čišćenje", 15);
+        }
+
+        public void IspisiUkupnuCenu()
+        {
+            Console.WriteLine($"[APARTMAN {BrojApartmana}] Ukupna cena boravka: {TrenutnoZaduzenje} EUR.");
+            TrenutnoZaduzenje = 0;
+            TrenutniBrojGostiju = 0;
         }
 
         public byte[] Serijalizuj()
