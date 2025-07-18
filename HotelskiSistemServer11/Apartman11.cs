@@ -39,6 +39,7 @@ namespace HotelskiSistemServer11
         public int UkupnoNocenja { get; set; } = 0; // NOVO za pamcenje ukupnih nocenja
         public bool ZavrsenoCiscenje { get; set; } = false;
         public double TrenutnoZaduzenje { get; set; } = 0;
+        public double UtrosenoMinibar { get; set; } = 0;
 
 
         public static readonly Dictionary<string, double> CenaMinibara = new Dictionary<string, double> {
@@ -93,6 +94,7 @@ namespace HotelskiSistemServer11
                 StanjeMinibara[artikal]--;
                 double cena = CenaMinibara.ContainsKey(artikal) ? CenaMinibara[artikal] : 2.5; // podrazumevana cena ako nema u rečniku
                 DodajUslugu($"Minibar-{artikal}", cena);
+                UtrosenoMinibar += cena; // VAŽNO: pamti za prikaz u VratiListuTroskova
                 Console.WriteLine($"[APARTMAN {BrojApartmana}] Iskorišćen artikal '{artikal}' iz minibara po ceni {cena} EUR.");
             }
             else
@@ -191,7 +193,7 @@ namespace HotelskiSistemServer11
             }
             double cenaNocenja = cenaPoNoci * UkupnoNocenja;
 
-            return $"Minibar: {ukupnoMinibar}.00 EUR, Alarm: {cenaAlarma}.00 EUR, Čišćenje: {cenaCiscenja}.00 EUR, Noćenja: {cenaNocenja}.00 EUR";
+            return $"Minibar: {UtrosenoMinibar}.00 EUR, Alarm: {cenaAlarma}.00 EUR, Čišćenje: {cenaCiscenja}.00 EUR, Noćenja: {cenaNocenja}.00 EUR";
         }
 
 
