@@ -87,6 +87,8 @@ public class NonBlockingServer
                 //string poruka = Encoding.UTF8.GetString(receivedData);
                 string[] delovi = poruka.Split(';').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
 
+                //bool alarmProvera;
+
                 if (poruka == "ZAHTEV=LISTA")
                 {
                     string lista = VratiListuSlobodnihApartmana();
@@ -126,6 +128,7 @@ public class NonBlockingServer
                         {
                             apartman.Alarm = StanjeAlarma.Aktivirano;
                             odgovor = "Alarm aktiviran.";
+                            apartman.alarmProvera = true;
                             PosaljiZadatkeOsobljuAkoPostoje();
                         }
                         else if (akcija == "MINIBAR")
@@ -170,17 +173,22 @@ public class NonBlockingServer
                         else if (akcija == "CISCENJE")
                         {
                             apartman.Stanje = StanjeApartmana.PotrebnoCiscenje;
-                            odgovor = "Zatraženo čišćenje sobe.";
+                            odgovor = "Zatraženo čišćenje sobe(uu medj).";
+                            // apartman.TrenutnoZaduzenje += 15;
+                            //I OCO 18.7
+                            //apartman.NaplatiTrazenoCiscenje();
+                            //OBRISANO 18.7
+                            //apartman.ZavrsenoCiscenje = true;
                             PosaljiZadatkeOsobljuAkoPostoje();
                         }
                         else if (akcija == "CISCENJE2")
                         {
                             apartman.Stanje = StanjeApartmana.PotrebnoCiscenje;
                           //apartman.TrenutniBrojGostiju = 0;
-                            odgovor = "Zatraženo čišćenje sobe u medjuboravku!!(4).";
+                            odgovor = "Zatraženo čišćenje sobe.";
+
                             PosaljiZadatkeOsobljuAkoPostoje();
 
-                            //dodaj slanje BORAVAK_ZAVRSEN klijentu:**
                             string porukaZavrsetak = $"BORAVAK_ZAVRSEN;APARTMAN={apartman.BrojApartmana}";
                             byte[] porukaBytes = Encoding.UTF8.GetBytes(porukaZavrsetak);
 
@@ -455,7 +463,7 @@ public class NonBlockingServer
 
                         apartman.StanjeMinibara.Clear();       // resetovanje minibara
                         apartman.Alarm = StanjeAlarma.Normalno; // reset alarma ako je potrebno
-                        apartman.ZavrsenoCiscenje = false;
+                        //apartman.ZavrsenoCiscenje = false;
 
                         Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} sada prelazi u PotrebnoCiscenje nakon isteka boravka.");
 
@@ -654,6 +662,7 @@ public class NonBlockingServer
                                         apartman.Stanje = StanjeApartmana.Prazan;
                                         apartman.TrenutniBrojGostiju = 0;
                                         apartman.UkupnoNocenja = 0; // reset za sledeći boravak
+                                        apartman.ZavrsenoCiscenje = false;
                                         Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} sada je Prazan.");
                                         
                                         

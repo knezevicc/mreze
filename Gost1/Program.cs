@@ -76,7 +76,8 @@ namespace Gost1
                 Console.WriteLine("Detaljni troškovi:");
                 foreach (var t in troskovi.Split(','))
                 {
-                    Console.WriteLine("- " + t);
+                    //obrisi trim
+                    Console.WriteLine("- " + t.Trim());
                 }
                 Console.WriteLine(); 
             }
@@ -265,7 +266,9 @@ namespace Gost1
 
                         ObradiPoruku(poruka);
 
-                        if (poruka.StartsWith("UKUPNA_CENA"))
+                        //if (poruka.StartsWith("UKUPNA_CENA"))
+                        if (poruka.Contains("UKUPNA_CENA"))
+
                         {
                             string[] deloviCene = poruka.Split(';');
                             string iznos = deloviCene.FirstOrDefault(x => x.StartsWith("IZNOS="))?.Split('=')[1] ?? "Nepoznato";

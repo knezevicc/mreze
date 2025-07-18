@@ -48,6 +48,7 @@ namespace HotelskiSistemServer11
         };
 
         public List<Gost11> Gosti { get; set; } = new List<Gost11>();
+        public bool alarmProvera { get; set; } = false;
 
         public Apartman11()
         {
@@ -139,12 +140,7 @@ namespace HotelskiSistemServer11
 
         public void NaplatiTrazenoCiscenje()
         {
-            DodajUslugu("Traženo čišćenje", 7);
-        }
-
-        public void NaplatiZavrsnoCiscenje()
-        {
-            DodajUslugu("Završno čišćenje", 15);
+            DodajUslugu("Traženo čišćenje", 15);
         }
 
         public void IspisiUkupnuCenu()
@@ -167,9 +163,14 @@ namespace HotelskiSistemServer11
                                 Console.WriteLine($"Artikal: {artikal.Key}, Količina: {artikal.Value}, Cena po artiklu: {cenaPoArtiklu}, Ukupno: {cenaArtikla}");
                                 ukupnoMinibar += cenaArtikla;*/
             }
+            double cenaAlarma = 0;
+            if (alarmProvera)
+                cenaAlarma = 5;
 
-            double cenaAlarma = 5; // primer
-            double cenaCiscenja = 15;              // primer
+            double cenaCiscenja = 0;
+            if (ZavrsenoCiscenje)
+                cenaCiscenja = 15;
+            
             double cenaPoNoci = 0;
 
             // Izračunaj cenu noćenja po klasi i broju noći
@@ -190,7 +191,7 @@ namespace HotelskiSistemServer11
             }
             double cenaNocenja = cenaPoNoci * UkupnoNocenja;
 
-            return $"Minibar: {ukupnoMinibar:F2} EUR, Alarm: {cenaAlarma:F2} EUR, Čišćenje: {cenaCiscenja:F2} EUR, Noćenja: {cenaNocenja:F2} EUR";
+            return $"Minibar: {ukupnoMinibar}.00 EUR, Alarm: {cenaAlarma}.00 EUR, Čišćenje: {cenaCiscenja}.00 EUR, Noćenja: {cenaNocenja}.00 EUR";
         }
 
 
