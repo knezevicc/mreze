@@ -11,12 +11,45 @@ namespace Gost1
 {
     public class Program
     {
-        public static void ObradiPoruku(string poruka)
+        public static async Task PosaljiIPrihvatiOdgovor(UdpClient udpClient, string porukaZaSlanje)
         {
+            byte[] porukaBytes = Encoding.UTF8.GetBytes(porukaZaSlanje);
+            await udpClient.SendAsync(porukaBytes, porukaBytes.Length, "127.0.0.1", 12345);
+
+            try
+            {
+                udpClient.Client.ReceiveTimeout = 3000; // 3 sekunde
+                var odgovor = await udpClient.ReceiveAsync();
+                string odgovorTekst = Encoding.UTF8.GetString(odgovor.Buffer);
+                Console.WriteLine($"[KLIJENT] Odgovor servera: {odgovorTekst}");
+            }
+            catch (SocketException)
+            {
+                Console.WriteLine("[KLIJENT] Server nije poslao odgovor na vreme, pokušajte ponovo.");
+            }
+        }
+
+        public static async Task ObradiPoruku(string poruka, UdpClient udpClient)
+        {
+            int GetBrojApartmana(string p)
+            {
+                string prefix = "APARTMAN=";
+                var deo = p.Split(';').FirstOrDefault(d => d.StartsWith(prefix));
+                if (deo != null)
+                {
+                    if (int.TryParse(deo.Substring(prefix.Length), out int br))
+                        return br;
+                }
+                return -1;
+            }
+
+            int brojApartmana = GetBrojApartmana(poruka);
             if (poruka.StartsWith("UKUPNA_CENA"))
             {
+                
+                //ode ni ne udje
                 string[] delovi = poruka.Split(';');
-                int brojApartmana = -1;
+                //int brojApartmana = -1;
                 double iznos = 0;
                 string troskovi = "";
 
@@ -50,19 +83,6 @@ namespace Gost1
                     Console.WriteLine();
                 }
 
-                // Opciono: nudimo korisniku unos kartice odmah
-                Console.Write("Unesite broj kreditne kartice za plaćanje ili 'X' za odustajanje: ");
-                string kartica = Console.ReadLine();
-
-                if (!string.Equals(kartica, "X", StringComparison.OrdinalIgnoreCase))
-                {
-                    Console.WriteLine($"[KLIJENT] Plaćanje sa kartice {kartica} uspešno evidentirano. Hvala na korišćenju usluge.\n");
-                    Console.WriteLine("Možete izvršiti novu rezervaciju ili izaći iz aplikacije.");
-                }
-                else
-                {
-                    Console.WriteLine("[KLIJENT] Plaćanje nije izvršeno. Možete pokušati ponovo kasnije.");
-                }
             }
             else if (poruka.StartsWith("BORAVAK_ZAVRSEN"))
             {
@@ -72,14 +92,51 @@ namespace Gost1
                 string ukupno = delovi.FirstOrDefault(x => x.StartsWith("UKUPNO="))?.Split('=')[1] ?? "Nepoznato";
                 string troskovi = delovi.FirstOrDefault(x => x.StartsWith("TROSKOVI="))?.Substring("TROSKOVI=".Length) ?? "Nema troškova";
 
+
                 Console.WriteLine($"Ukupno za uplatu: {ukupno} EUR.");
                 Console.WriteLine("Detaljni troškovi:");
                 foreach (var t in troskovi.Split(','))
                 {
-                    //obrisi trim
                     Console.WriteLine("- " + t.Trim());
                 }
-                Console.WriteLine(); 
+                Console.WriteLine();
+
+
+                Console.Write("Unesite broj kreditne kartice za plaćanje ili 'X' za odustajanje: ");
+                string brojKartice = Console.ReadLine();
+                /*if (!string.Equals(brojKartice, "X", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (brojApartmana == -1)
+                    {
+                        string prefix = "APARTMAN=";
+                        var deo = delovi.FirstOrDefault(d => d.StartsWith(prefix));
+                        if (deo != null) int.TryParse(deo.Substring(prefix.Length), out brojApartmana);
+                    }
+
+                    string porukaKartica = $"POTVRDA_PLACANJA;APARTMAN={brojApartmana};KARTICA={brojKartice}";
+                    byte[] porukaKarticaBytes = Encoding.UTF8.GetBytes(porukaKartica);
+
+                    await udpClient.SendAsync(porukaKarticaBytes, porukaKarticaBytes.Length, "127.0.0.1", 12345);
+
+                    udpClient.Client.ReceiveTimeout = 5000; // 5 sekundi
+
+                    try
+                    {
+                        var odgovor = await udpClient.ReceiveAsync();
+                        string odgovorTekst = Encoding.UTF8.GetString(odgovor.Buffer);
+                        Console.WriteLine($"[KLIJENT] Odgovor servera: {odgovorTekst}");
+                    }
+                    catch (SocketException)
+                    {
+                        Console.WriteLine("[KLIJENT] Nije primljen odgovor od servera (istekao timeout).");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[KLIJENT] Plaćanje nije izvršeno. Možete pokušati ponovo kasnije.");
+                }*/
+                await PosaljiIPrihvatiOdgovor(udpClient, $"POTVRDA_PLACANJA;APARTMAN={brojApartmana};KARTICA={brojKartice}");
+
             }
             else
             {
@@ -87,34 +144,6 @@ namespace Gost1
             }
         }
 
-        /*ZAKOM UVECE 16.7
-        public static void ObradiPoruku(string poruka)
-        {
-            if (poruka.StartsWith("UKUPNA_CENA"))
-            {
-                string[] delovi = poruka.Split(';');
-                int brojApartmana = -1;
-                double iznos = 0;
-
-                foreach (var deo in delovi)
-                {
-                    if (deo.StartsWith("APARTMAN="))
-                    {
-                        int.TryParse(deo.Split('=')[1], out brojApartmana);
-                    }
-                    else if (deo.StartsWith("IZNOS="))
-                    {
-                        double.TryParse(deo.Split('=')[1], out iznos);
-                    }
-                }
-
-                Console.WriteLine($"\n[SERVER] Ukupna cena boravka za apartman {brojApartmana} je {iznos} EUR.\n");
-            }
-            else
-            {
-                Console.WriteLine("[SERVER] " + poruka);
-            }
-        }*/
         public static async Task Main(string[] args)
         {
             using (var udpClient = new UdpClient())
@@ -187,18 +216,7 @@ namespace Gost1
                 Console.WriteLine("[KLIJENT] Odgovor servera: " + potvrdaGosti);
 
                 Console.WriteLine($"\nGost boravi {brojNoci} sekundi (1 sekunda = 1 noć). Možete slati zahteve osoblju dok traje boravak.");
-                /*
-                while (brojNoci > 0)
-                {
-                    // šalje serveru preostali broj noći svakih 1s
-                    string status = $"STATUS;APARTMAN={brojApartmana};PREOSTALO={brojNoci}";
-                    byte[] statusBytes = Encoding.UTF8.GetBytes(status);
-                    await udpClient.SendAsync(statusBytes, statusBytes.Length, "127.0.0.1", 12345);
 
-                    await Task.Delay(1000);
-                    brojNoci--;
-                }
-                */
 
                 DateTime krajBoravka = DateTime.Now.AddSeconds(brojNoci);
                 bool boravakZavrsen = false;
@@ -243,7 +261,7 @@ namespace Gost1
                 while (true) {
 
                     if (boravakZavrsen)
-                        Console.WriteLine("\n⚠ Boravak je završen. Meni ostaje aktivan, ali ne možete više slati zahteve serveru.");
+                        Console.WriteLine("\nBoravak je završen. Meni ostaje aktivan, ali ne možete više slati zahteve serveru.");
 
                     Console.WriteLine("\nIzaberite opciju:");
                     Console.WriteLine("1 - Aktivacija alarma");
@@ -264,7 +282,7 @@ namespace Gost1
                         var odgovorCena = await udpClient.ReceiveAsync();
                         string poruka = Encoding.UTF8.GetString(odgovorCena.Buffer);
 
-                        ObradiPoruku(poruka);
+                        await ObradiPoruku(poruka,udpClient);
 
                         //if (poruka.StartsWith("UKUPNA_CENA"))
                         if (poruka.Contains("UKUPNA_CENA"))
@@ -364,13 +382,14 @@ namespace Gost1
                             Console.WriteLine("[KLIJENT] Odgovor servera: " + poruka);
                         }
 
-                        ObradiPoruku(poruka);
+                        await ObradiPoruku(poruka,udpClient);
+                        //ObradiPoruku(poruka);
 
                         //proba
                         if (poruka.StartsWith("BORAVAK_ZAVRSEN"))
                         {
                             boravakZavrsen = true;  // ovo je ključno
-                            Console.WriteLine("🔔 Boravak je završen.");
+                            Console.WriteLine("Boravak je završen.");
                             break; // prekidamo slanje daljih zahteva jer je boravak završen
                         }
                     }
