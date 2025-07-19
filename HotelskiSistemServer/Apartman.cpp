@@ -6,8 +6,7 @@ Apartman::Apartman()
     trenutniBrojGostiju(0), stanjeApartmana(StanjeApartmana::Prazan),
     stanjeAlarma(StanjeAlarma::Normalno) {}
     */
-//neki kkomentar produyetak
-//i na sl liniji 
+
 
 Apartman::Apartman(int broj, int sprat, int klasa, int maxGostiju)
     : brojApartmana(broj),
