@@ -103,6 +103,12 @@ namespace Osoblje1
 
                         Console.WriteLine($"[OSOBLJE] Obrada zadatka: {vrstaZadatka} za apartman {brojApartmana}");
 
+                        Console.WriteLine("Za izvršavanje zadatka pritisnite 1: ");
+                        while (Console.ReadKey(true).KeyChar != '1')
+                        {
+                            Console.WriteLine("Pritisnite 1 za izvršavanje zadatka...");
+                        }
+
                         // Potvrda serveru
                         string potvrda = $"Zadatak primljen i izvrsen;VRSTA={vrstaZadatka};APARTMAN={brojApartmana}";
                         byte[] potvrdaBytes = Encoding.UTF8.GetBytes(potvrda);
