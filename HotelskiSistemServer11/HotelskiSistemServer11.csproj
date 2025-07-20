@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Apartman11.cs" />
+    <Compile Include="DeserializationHelper.cs" />
     <Compile Include="NonBlockingServer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
