@@ -23,6 +23,7 @@ public class NonBlockingServer
     private Dictionary<int, DateTime> vremePrijaveGosta = new Dictionary<int, DateTime>();
     private Dictionary<int, DateTime> poslednjeSmanjenje = new Dictionary<int, DateTime>();
     private Dictionary<int, IPEndPoint> apartmanEndPoints = new Dictionary<int, IPEndPoint>();
+    private Dictionary<Socket, string> funkcijaOsoblja = new Dictionary<Socket, string>();
 
     //sprecava beskonacnu petlju slanja yadataka
     private HashSet<int> poslatiZadaci = new HashSet<int>();
@@ -463,7 +464,15 @@ public class NonBlockingServer
                         {
                             string zadatak = $"ZADATAK=Ciscenje;APARTMAN={apartman.BrojApartmana}";
                             foreach (var client in tcpClients)
+                            {
+                                if (funkcijaOsoblja.ContainsKey(client) && funkcijaOsoblja[client] == "Ciscenje")
+                                {
+                                    PosaljiZadatak(client, zadatak);
+                                }
+                            }
+                            /*foreach (var client in tcpClients)
                                 PosaljiZadatak(client, zadatak);
+                            */
                             poslatiZadaci.Add(idFinalno);
                             Console.WriteLine($"[SERVER] Poslat zadatak osoblju za FINALNO CISCENJE apartmana {apartman.BrojApartmana}");
                         }
@@ -480,8 +489,38 @@ public class NonBlockingServer
                 tcpClients.Add(client);
                 Console.WriteLine($"[TCP] Novo osoblje povezano: {client.RemoteEndPoint}");
 
-            }
 
+                // Očekuj da klijent odmah po konekciji pošalje npr. "FUNKCIJA=Ciscenje"
+                byte[] buffer = new byte[1024];
+                int bytesRead = 0;
+                try
+                {
+                    bytesRead = client.Receive(buffer);
+                    if (bytesRead > 0)
+                    {
+                        string funkcijaPoruka = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        if (funkcijaPoruka.StartsWith("FUNKCIJA="))
+                        {
+                            string func = funkcijaPoruka.Split('=')[1].Trim();
+                            funkcijaOsoblja[client] = func;
+                            Console.WriteLine($"[TCP] Osoblje {client.RemoteEndPoint} prijavljeno kao: {func}");
+                        }
+                        else
+                        {
+                            funkcijaOsoblja[client] = "Nepoznata";
+                        }
+                    }
+                    else
+                    {
+                        funkcijaOsoblja[client] = "Nepoznata";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[TCP] Greška pri čitanju funkcije: {ex.Message}");
+                    funkcijaOsoblja[client] = "Nepoznata";
+                }
+            }
             PosaljiZadatkeOsobljuAkoPostoje();
 
             #endregion
@@ -626,47 +665,64 @@ public class NonBlockingServer
         {
             var client = tcpClients[i];
 
+            if (!funkcijaOsoblja.ContainsKey(client))
+                continue;
+
+            var func = funkcijaOsoblja[client];
+
             foreach (var apartman in apartmani)
-            {//CISCENJE KOJE ZAVRSAVA BROJANJE
+            {
                 int idFinalno = apartman.BrojApartmana * 100 + 1;
-                if (apartman.Stanje == StanjeApartmana.PotrebnoCiscenje
-                    && apartman.PreostaleNoci == 0
-                    && !poslatiZadaci.Contains(idFinalno))
-                {
-                    string zadatak = $"ZADATAK=Ciscenje;APARTMAN={apartman.BrojApartmana}";
-                    PosaljiZadatak(client, zadatak);
-                    poslatiZadaci.Add(idFinalno);
-                    break; // šaljemo samo jedan zadatak po ciklusu
-                }
-
                 int idAlarm = apartman.BrojApartmana * 100 + 2;
-                if (apartman.Alarm == StanjeAlarma.Aktivirano && !poslatiZadaci.Contains(idAlarm))
-                {
-                    string zadatak = $"ZADATAK=SanacijaAlarma;APARTMAN={apartman.BrojApartmana}";
-                    PosaljiZadatak(client, zadatak);
-                    poslatiZadaci.Add(idAlarm);
-                    break;
-                }
-
                 int idMinibar = apartman.BrojApartmana * 100 + 3;
-                if (apartman.StanjeMinibara.Values.Any(v => v < 5) && !poslatiZadaci.Contains(idMinibar))
-                {
-                    string zadatak = $"ZADATAK=UpravljanjeMinibarem;APARTMAN={apartman.BrojApartmana}";
-                    PosaljiZadatak(client, zadatak);
-                    poslatiZadaci.Add(idMinibar);
-                    break;
-                }
-
                 int idTrazeno = apartman.BrojApartmana * 100 + 4;
-                if (apartman.Stanje == StanjeApartmana.PotrebnoCiscenje
-                    && apartman.PreostaleNoci > 0
-                    && !poslatiZadaci.Contains(idTrazeno))
+
+                if (func == "Ciscenje")
                 {
-                    string zadatak = $"ZADATAK=CiscenjeTrazeno;APARTMAN={apartman.BrojApartmana}";
-                    PosaljiZadatak(client, zadatak);
-                    poslatiZadaci.Add(idTrazeno);
-                    //break;
-                    continue;
+                    if (apartman.Stanje == StanjeApartmana.PotrebnoCiscenje
+                        && apartman.PreostaleNoci == 0
+                        && !poslatiZadaci.Contains(idFinalno))
+                    {
+                        string zadatak = $"ZADATAK=Ciscenje;APARTMAN={apartman.BrojApartmana}";
+                        Console.WriteLine($"[DEBUG] Spreman za slanje {zadatak} osoblju {client.RemoteEndPoint} funkcija: {func}");
+
+                        PosaljiZadatak(client, zadatak);
+                        poslatiZadaci.Add(idFinalno);
+                        continue; // šaljemo samo jedan zadatak po ciklusu
+                    }
+                    else if (apartman.Stanje == StanjeApartmana.PotrebnoCiscenje
+                        && apartman.PreostaleNoci > 0
+                        && !poslatiZadaci.Contains(idTrazeno))
+                    {
+                        string zadatak = $"ZADATAK=CiscenjeTrazeno;APARTMAN={apartman.BrojApartmana}";
+                        PosaljiZadatak(client, zadatak);
+                        poslatiZadaci.Add(idTrazeno);
+                        continue;
+                    }
+                }
+                else if (func == "SanacijaAlarma")
+                {
+                    if (apartman.Alarm == StanjeAlarma.Aktivirano && !poslatiZadaci.Contains(idAlarm))
+                    {
+                        string zadatak = $"ZADATAK=SanacijaAlarma;APARTMAN={apartman.BrojApartmana}";
+                        Console.WriteLine($"[DEBUG] Spreman za slanje {zadatak} osoblju {client.RemoteEndPoint} funkcija: {func}");
+
+                        PosaljiZadatak(client, zadatak);
+                        poslatiZadaci.Add(idAlarm);
+                        continue;
+                    }
+                }
+                else if (func == "UpravljanjeMinibarem")
+                {
+                    if (apartman.StanjeMinibara.Values.Any(v => v < 5) && !poslatiZadaci.Contains(idMinibar))
+                    {
+                        string zadatak = $"ZADATAK=UpravljanjeMinibarem;APARTMAN={apartman.BrojApartmana}";
+                        Console.WriteLine($"[DEBUG] Spreman za slanje {zadatak} osoblju {client.RemoteEndPoint} funkcija: {func}");
+
+                        PosaljiZadatak(client, zadatak);
+                        poslatiZadaci.Add(idMinibar);
+                        continue;
+                    }
                 }
             }
         }
