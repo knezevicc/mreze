@@ -80,7 +80,19 @@ namespace HotelskiSistemServer11
             PreostaleNoci = 0;
             TrenutnoZaduzenje = 0;
         }
-
+        public void Reset()
+        {
+            Gosti.Clear();
+            TrenutniBrojGostiju = 0;
+            ZavrsenoCiscenje = false;
+            alarmProvera = false;
+            UtrosenoMinibar = 0;
+            UkupnoNocenja = 0;
+            Stanje = StanjeApartmana.Prazan;
+            Alarm = StanjeAlarma.Normalno;
+            PreostaleNoci = 0;
+            TrenutnoZaduzenje = 0;
+        }
         public void DodajUslugu(string naziv, double cena)
         {
             TrenutnoZaduzenje += cena;
