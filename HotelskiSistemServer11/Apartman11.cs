@@ -132,20 +132,11 @@ namespace HotelskiSistemServer11
                     cenaPoNoci = 20;
                     break;
             }
-            //TrenutnoZaduzenje += UkupnoNocenja * cenaPoNoci;
-            //DodajUslugu($"Noćenje x{UkupnoNocenja}:", TrenutnoZaduzenje);
-            
-            //double cenaNocenja = UkupnoNocenja * cenaPoNoci;
-            //double ukupnaCena = TrenutnoZaduzenje + cenaNocenja;
-            //return ukupnaCena;
 
             double ukupno = UkupnoNocenja * cenaPoNoci;
             DodajUslugu($"Noćenje x{UkupnoNocenja} :", ukupno);
 
-            //double ukupno = cenaPoNoci * PreostaleNoci * TrenutniBrojGostiju;
-            //DodajUslugu($"Noćenje x{PreostaleNoci} za {TrenutniBrojGostiju} gosta", ukupno);
-            //DodajUslugu($"Noćenje x{UkupnoNocenja} za {TrenutniBrojGostiju} gosta", TrenutnoZaduzenje);
-        }
+         }
         
         public void NaplatiAlarm()
         {
@@ -172,10 +163,6 @@ namespace HotelskiSistemServer11
                 double cenaPoArtiklu = CenaMinibara.ContainsKey(artikal.Key) ? CenaMinibara[artikal.Key] : 0;
 
                 ukupnoMinibar += artikal.Value * cenaPoArtiklu;
-                /*double cenaArtikla = artikal.Value * cenaPoArtiklu;
-
-                                Console.WriteLine($"Artikal: {artikal.Key}, Količina: {artikal.Value}, Cena po artiklu: {cenaPoArtiklu}, Ukupno: {cenaArtikla}");
-                                ukupnoMinibar += cenaArtikla;*/
             }
             double cenaAlarma = 0;
             if (alarmProvera)

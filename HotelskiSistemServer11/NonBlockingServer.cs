@@ -207,7 +207,7 @@ public class NonBlockingServer
 
                     string klasa = "";
                     int brojGostiju1 = -1;
-                    Console.WriteLine(poruka);
+                    //Console.WriteLine(poruka);
 
                     foreach (var deo in delovi)
                     {
@@ -357,11 +357,7 @@ public class NonBlockingServer
                         // Odgovori klijentu da je plaćanje prihvaćeno
                         string odgovor = $"PLACANJE_PRIHVACENO;APARTMAN={brojApartmana}";
                         byte[] odgovorBytes = Encoding.UTF8.GetBytes(odgovor);
-                        // udpSocket.Send(odgovorBytes,odgovorBytes.Length,klijentEP);
-                        //Console.WriteLine($"[SERVER] Plaćanje prihvaćeno za apartman {brojApartmana}.");
-
-                        //apartmanEndPoints[brojApartmana] = (IPEndPoint)remoteEP;
-
+                       
                         if (apartmanEndPoints.TryGetValue(brojApartmana, out IPEndPoint ep))
                         {
                             udpSocket.SendTo(odgovorBytes, ep);
@@ -371,21 +367,11 @@ public class NonBlockingServer
                             Console.WriteLine($"[SERVER] Nema sacuvan EndPoint za apartman {brojApartmana}, ne salje potvrdu placanja.");
                         }
 
-                        //udpSocket.SendTo(odgovorBytes, remoteEP);
                         Console.WriteLine($"[SERVER] Placanje prihvaceno za apartman {brojApartmana}.");
                         var oslobodjenApartman = apartmani.FirstOrDefault(a =>
                        a.BrojApartmana == brojApartmana);
                         oslobodjenApartman.Reset(); // Resetujemo apartman nakon placanja
-                        // Ovde šalješ tačno na klijentov IPEndPoint iz dictionary-ja:
-                        /*if (apartmanEndPoints.TryGetValue(brojApartmana, out IPEndPoint klijentEP))
-                        {
-                            udpSocket.SendTo(odgovorBytes, klijentEP);
-                            Console.WriteLine($"[SERVER] Plaćanje prihvaćeno za apartman {brojApartmana}.");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[SERVER] Nije pronađen EndPoint za apartman {brojApartmana}, ne može se poslati potvrda.");
-                        }*/
+               
                     }
                     else
                     {
@@ -428,17 +414,13 @@ public class NonBlockingServer
                     }
                     if (apartman.PreostaleNoci == 0 && apartman.Stanje == StanjeApartmana.Zauzet)
                     {
-                        
-                            apartman.NaplatiNocenja();
-                            // apartman.ZavrsenoCiscenje = true; // Obeleži da je obračun urađen
-                        
+                        apartman.NaplatiNocenja();                        
 
                         apartman.Stanje = StanjeApartmana.PotrebnoCiscenje;
                         apartman.TrenutniBrojGostiju = 0;
 
                         apartman.StanjeMinibara.Clear();       // resetovanje minibara
                         apartman.Alarm = StanjeAlarma.Normalno; // reset alarma ako je potrebno
-                        //apartman.ZavrsenoCiscenje = false;
 
                         Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} sada prelazi u PotrebnoCiscenje nakon isteka boravka.");
 
@@ -470,9 +452,6 @@ public class NonBlockingServer
                                     PosaljiZadatak(client, zadatak);
                                 }
                             }
-                            /*foreach (var client in tcpClients)
-                                PosaljiZadatak(client, zadatak);
-                            */
                             poslatiZadaci.Add(idFinalno);
                             Console.WriteLine($"[SERVER] Poslat zadatak osoblju za FINALNO CISCENJE apartmana {apartman.BrojApartmana}");
                         }
@@ -588,16 +567,11 @@ public class NonBlockingServer
                                         apartman.UkupnoNocenja = 0; // reset za sledeći boravak
                                         apartman.ZavrsenoCiscenje = false;
                                         Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} sada je Prazan.");
-
-
-                                        //apartman.ZavrsenoCiscenje = true; // ➡️ OVO DODAŠ
-
                                     }
                                     else if (vrstaZadatka == "CiscenjeTrazeno")
                                     {
                                         apartman.NaplatiTrazenoCiscenje();
                                         apartman.Stanje = StanjeApartmana.Zauzet;
-                                        //apartman.ZavrsenoCiscenje = true;
                                         Console.WriteLine($"[SERVER] Apartman {apartman.BrojApartmana} je ociscen na zahtev gosta.");
                                     }
                                     else if (vrstaZadatka == "SanacijaAlarma")
